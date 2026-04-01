@@ -1,0 +1,18 @@
+[
+  {
+    "symptoms": "chest pain",
+    "age": 65,
+    "heart_rate": 120,
+    "blood_pressure": 90,
+    "true_priority": 5,
+    "department": "cardiology"
+  },
+  {
+    "symptoms": "head injury",
+    "age": 40,
+    "heart_rate": 100,
+    "blood_pressure": 110,
+    "true_priority": 4,
+    "department": "neurology"
+  }
+]
