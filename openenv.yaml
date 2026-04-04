@@ -1,0 +1,35 @@
+name: hospital-triage-env
+version: 1.0
+
+environment:
+  entry_point: env.hospital_env:HospitalEnv
+
+observation_space:
+  type: dict
+  fields:
+    symptoms: string
+    age: int
+    heart_rate: int
+    blood_pressure: int
+
+action_space:
+  type: dict
+  fields:
+    priority: int
+    department: string
+
+tasks:
+  - name: easy
+    difficulty: easy
+    description: Predict correct department
+
+  - name: medium
+    difficulty: medium
+    description: Predict department + priority
+
+  - name: hard
+    difficulty: hard
+    description: Full triage with penalties
+
+reward:
+  type: dense
