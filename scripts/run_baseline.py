@@ -4,11 +4,6 @@ random.seed(42)
 from env.hospital_env import HospitalEnv
 from env.tasks import grade_easy, grade_medium, grade_hard
 
-
-# Initialize environment (no need for JSON now if using generator)
-env = HospitalEnv(data=None)
-
-
 # 🧠 Smart Agent (rule-based)
 def smart_agent(state):
     symptoms = state["symptoms"]
@@ -40,43 +35,40 @@ def smart_agent(state):
         "department": department
     }
 
+if __name__ == "__main__":
+    # Initialize environment
+    env = HospitalEnv(data=None)
+    
+    episodes = 20
+    total_reward = 0
+    easy_score = 0
+    medium_score = 0
+    hard_score = 0
 
-episodes = 20
+    for _ in range(episodes):
+        state = env.reset()
+        action = smart_agent(state)
+        _, reward, _, info = env.step(action)
+        patient = env.patient  # ground truth
 
-total_reward = 0
-easy_score = 0
-medium_score = 0
-hard_score = 0
+        # scoring
+        easy_score += grade_easy(patient, action)
+        medium_score += grade_medium(patient, action)
+        hard_score += grade_hard(patient, action)
 
+        print("State:", state)
+        print("Action:", action)
+        print("Reward:", reward)
+        print("True:", {
+            "priority": patient["true_priority"],
+            "department": patient["department"]
+        })
+        print("------")
 
-for _ in range(episodes):
-    state = env.reset()
+        total_reward += reward
 
-    action = smart_agent(state)
-
-    _, reward, _, info = env.step(action)
-
-    patient = env.patient  # ground truth
-
-    # scoring
-    easy_score += grade_easy(patient, action)
-    medium_score += grade_medium(patient, action)
-    hard_score += grade_hard(patient, action)
-
-    print("State:", state)
-    print("Action:", action)
-    print("Reward:", reward)
-    print("True:", {
-        "priority": patient["true_priority"],
-        "department": patient["department"]
-    })
-    print("------")
-
-    total_reward += reward
-
-
-print("\n===== FINAL RESULTS =====")
-print("Average Reward:", total_reward / episodes)
-print("Easy Score:", easy_score / episodes)
-print("Medium Score:", medium_score / episodes)
-print("Hard Score:", hard_score / episodes)
+    print("\n===== FINAL RESULTS =====")
+    print("Average Reward:", total_reward / episodes)
+    print("Easy Score:", easy_score / episodes)
+    print("Medium Score:", medium_score / episodes)
+    print("Hard Score:", hard_score / episodes)
