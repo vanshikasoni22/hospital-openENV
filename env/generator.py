@@ -4,10 +4,12 @@ def generate_patient():
     symptoms_list = [
         ("chest pain", "cardiology"),
         ("head injury", "neurology"),
+        ("fracture", "orthopedics"),
+        ("shortness of breath", "pulmonology"),
         ("fever", "general"),
-        ("shortness of breath", "cardiology"),
-        ("dizziness", "general")
-    ]
+        ("unconscious", "emergency"),
+        ("severe bleeding", "emergency"),
+]
 
     symptom, department = random.choice(symptoms_list)
 
