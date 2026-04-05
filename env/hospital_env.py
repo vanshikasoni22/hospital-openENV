@@ -1,7 +1,7 @@
-import random
 from env.models import Action
 from env.rewards import compute_reward
 from env.generator import generate_patient
+
 
 class HospitalEnv:
 
@@ -22,11 +22,16 @@ class HospitalEnv:
         }
 
     def step(self, action_dict):
+        # Convert dict → Action object
         action = Action(**action_dict)
 
-        reward, done = compute_reward(self.patient, action)
+        # ✅ FIX: compute_reward returns ONLY reward
+        reward = compute_reward(self.patient, action.__dict__)
 
-        next_state = None if done else self.state()
+        # In this environment, each episode = 1 step
+        done = True
+
+        next_state = None
 
         return next_state, reward, done, {
             "true_priority": self.patient["true_priority"],
