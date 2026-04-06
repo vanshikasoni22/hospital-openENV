@@ -9,7 +9,7 @@ class Patient(BaseModel):
 
 
 class Action(BaseModel):
-    priority: int
+    seriousness: int 
     department: Literal[
         "cardiology",
         "neurology",
