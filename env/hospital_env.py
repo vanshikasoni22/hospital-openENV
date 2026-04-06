@@ -54,7 +54,9 @@ class HospitalEnv:
 
         # 🧠 SELECT REWARD BASED ON TASK
         reward = self._get_reward(self.patient, action.__dict__)
-
+        if action_dict["department"] == self.patient["department"]:
+            self.correct += 1
+        self.total += 1
         self.current_step += 1
 
         # ✅ CHECK IF EPISODE DONE
