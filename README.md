@@ -35,7 +35,7 @@ python3 -m pip install streamlit pydantic pandas
 ```bash
 streamlit run scripts/dashboard.py
 ```
-### 3. Launch the agent on CLI
+### 3. Launch on CLI
 ```bash
 .venv/bin/python -m scripts.run_baseline
 ```
