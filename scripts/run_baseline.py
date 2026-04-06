@@ -2,7 +2,7 @@ from env.hospital_env import HospitalEnv
 import random
 from collections import defaultdict
 
-# 🎯 Possible actions
+# 🎯 All possible actions
 DEPARTMENTS = [
     "cardiology",
     "neurology",
@@ -11,35 +11,37 @@ DEPARTMENTS = [
     "pulmonology",
     "emergency"
 ]
+
 SERIOUSNESS = [1, 2, 3, 4, 5]
 
 ACTIONS = [(d, s) for d in DEPARTMENTS for s in SERIOUSNESS]
 
 
-# 🧠 Q-Table (state-action values)
+# 🧠 Q-Table
 Q = defaultdict(lambda: [0] * len(ACTIONS))
 
 
-# 🔑 Convert state → simple key
+# 🔑 Improved state representation
 def state_to_key(state):
     return (
-        state["symptoms"],
-        state["age"] // 10,          # bucket age
-        state["heart_rate"] // 10,   # bucket HR
+        hash(state["symptoms"]) % 10,   # compress symptoms
+        state["age"] // 10,
+        state["heart_rate"] // 10,
         state["blood_pressure"] // 10
     )
 
 
-# 🎯 Choose action (epsilon-greedy)
-def choose_action(state, epsilon=0.2):
+# 🎯 Correct epsilon-greedy action selection
+def choose_action(state, epsilon):
     key = state_to_key(state)
 
     if random.random() < epsilon:
-        return random.choice(ACTIONS), random.randint(0, len(ACTIONS)-1)
+        action_idx = random.randint(0, len(ACTIONS) - 1)
+    else:
+        q_values = Q[key]
+        action_idx = q_values.index(max(q_values))
 
-    q_values = Q[key]
-    max_idx = q_values.index(max(q_values))
-    return ACTIONS[max_idx], max_idx
+    return ACTIONS[action_idx], action_idx
 
 
 # 🔁 TRAINING LOOP
@@ -48,9 +50,9 @@ def train(env, episodes=500):
     alpha = 0.1
     gamma = 0.95
 
-    epsilon = 1.0          # start fully random
-    epsilon_min = 0.05     # minimum exploration
-    epsilon_decay = 0.995  # slowly reduce randomness
+    epsilon = 1.0
+    epsilon_min = 0.05
+    epsilon_decay = 0.995
 
     for ep in range(episodes):
         state = env.reset()
@@ -61,13 +63,7 @@ def train(env, episodes=500):
         while not done:
             key = state_to_key(state)
 
-            # 🎯 epsilon-greedy
-            if random.random() < epsilon:
-                action_idx = random.randint(0, len(ACTIONS)-1)
-            else:
-                action_idx = Q[key].index(max(Q[key]))
-
-            dept, ser = ACTIONS[action_idx]
+            (dept, ser), action_idx = choose_action(state, epsilon)
 
             action_dict = {
                 "department": dept,
@@ -78,29 +74,31 @@ def train(env, episodes=500):
 
             total_reward += reward
 
-            # 🔥 STRONGER LEARNING FROM MISTAKES
+            # 🔥 stronger learning from mistakes
             if reward < 0:
-                reward *= 1.5   # amplify penalty
+                reward *= 2
 
             next_key = state_to_key(next_state) if next_state else None
             max_future = max(Q[next_key]) if next_key else 0
 
+            # 🧠 Q-learning update
             Q[key][action_idx] += alpha * (
                 reward + gamma * max_future - Q[key][action_idx]
             )
 
             state = next_state
 
-        # 📉 reduce randomness
+        # 📉 reduce randomness over time
         epsilon = max(epsilon_min, epsilon * epsilon_decay)
 
         print(f"Episode {ep+1} | Reward: {total_reward:.2f} | Accuracy: {info['accuracy']:.2f} | Epsilon: {epsilon:.2f}")
 
 
-# 🧪 TEST (after training)
+# 🧪 TEST TRAINED MODEL (with your desired output format)
 def test(env):
     state = env.reset()
     done = False
+    step_num = 1
 
     while not done:
         key = state_to_key(state)
@@ -114,22 +112,35 @@ def test(env):
             "seriousness": ser
         }
 
-        print("\n🩺 INPUT:", state)
-        print("🤖 ACTION:", action)
+        print(f"\n🩺 Step {step_num}")
+        print("INPUT STATE:")
+        print(f"Symptoms: {state['symptoms']}")
+        print(f"Age: {state['age']}")
+        print(f"Heart Rate: {state['heart_rate']}")
+        print(f"Blood Pressure: {state['blood_pressure']}")
+
+        print("\nAGENT ACTION:")
+        print(f"Department: {action['department']}")
+        print(f"Seriousness: {action['seriousness']}")
 
         state, reward, done, info = env.step(action)
 
-        print("🎯 REWARD:", reward)
-        print("✅ TRUE:", info["true_department"], info["true_seriousness"])
+        print(f"\nREWARD: {reward}")
+        print(f"TRUE DEPARTMENT: {info['true_department']}")
+        print(f"TRUE SERIOUSNESS: {info['true_seriousness']}")
+        print(f"RUNNING ACCURACY: {info['accuracy']:.2f}")
         print("-" * 40)
 
+        step_num += 1
 
+
+# 🚀 MAIN
 if __name__ == "__main__":
 
     env = HospitalEnv(task="hard", max_steps=20)
 
     print("🚀 Training started...\n")
-    train(env, episodes=200)
+    train(env, episodes=5)   # 🔥 important
 
     print("\n🧪 Testing trained agent...\n")
     test(env)
