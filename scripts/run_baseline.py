@@ -36,11 +36,14 @@ def choose_action(state, epsilon=0.2):
 
 
 # 🔁 TRAINING LOOP
-def train(env, episodes=200):
+def train(env, episodes=500):
 
-    alpha = 0.1   # learning rate
-    gamma = 0.9   # future reward
-    epsilon = 0.2 # exploration
+    alpha = 0.1
+    gamma = 0.95
+
+    epsilon = 1.0          # start fully random
+    epsilon_min = 0.05     # minimum exploration
+    epsilon_decay = 0.995  # slowly reduce randomness
 
     for ep in range(episodes):
         state = env.reset()
@@ -51,7 +54,13 @@ def train(env, episodes=200):
         while not done:
             key = state_to_key(state)
 
-            (dept, ser), action_idx = choose_action(state, epsilon)
+            # 🎯 epsilon-greedy
+            if random.random() < epsilon:
+                action_idx = random.randint(0, len(ACTIONS)-1)
+            else:
+                action_idx = Q[key].index(max(Q[key]))
+
+            dept, ser = ACTIONS[action_idx]
 
             action_dict = {
                 "department": dept,
@@ -62,7 +71,10 @@ def train(env, episodes=200):
 
             total_reward += reward
 
-            # 🔁 Q-learning update
+            # 🔥 STRONGER LEARNING FROM MISTAKES
+            if reward < 0:
+                reward *= 1.5   # amplify penalty
+
             next_key = state_to_key(next_state) if next_state else None
             max_future = max(Q[next_key]) if next_key else 0
 
@@ -72,7 +84,10 @@ def train(env, episodes=200):
 
             state = next_state
 
-        print(f"Episode {ep+1} | Reward: {total_reward:.2f} | Accuracy: {info['accuracy']:.2f}")
+        # 📉 reduce randomness
+        epsilon = max(epsilon_min, epsilon * epsilon_decay)
+
+        print(f"Episode {ep+1} | Reward: {total_reward:.2f} | Accuracy: {info['accuracy']:.2f} | Epsilon: {epsilon:.2f}")
 
 
 # 🧪 TEST (after training)
