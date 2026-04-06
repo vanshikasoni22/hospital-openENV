@@ -1,71 +1,113 @@
 from env.hospital_env import HospitalEnv
 import random
+from collections import defaultdict
+
+# 🎯 Possible actions
+DEPARTMENTS = ["cardiology", "neurology", "orthopedics", "general"]
+SERIOUSNESS = [1, 2, 3, 4, 5]
+
+ACTIONS = [(d, s) for d in DEPARTMENTS for s in SERIOUSNESS]
 
 
-# 🎯 Simple baseline agent (random actions)
-def random_agent_action():
-    departments = ["cardiology", "neurology", "orthopedics", "general"]
-    seriousness_levels = [1, 2, 3, 4, 5]
-
-    return {
-        "department": random.choice(departments),
-        "seriousness": random.choice(seriousness_levels)
-    }
+# 🧠 Q-Table (state-action values)
+Q = defaultdict(lambda: [0] * len(ACTIONS))
 
 
-def run_episode(env):
+# 🔑 Convert state → simple key
+def state_to_key(state):
+    return (
+        state["symptoms"],
+        state["age"] // 10,          # bucket age
+        state["heart_rate"] // 10,   # bucket HR
+        state["blood_pressure"] // 10
+    )
+
+
+# 🎯 Choose action (epsilon-greedy)
+def choose_action(state, epsilon=0.2):
+    key = state_to_key(state)
+
+    if random.random() < epsilon:
+        return random.choice(ACTIONS), random.randint(0, len(ACTIONS)-1)
+
+    q_values = Q[key]
+    max_idx = q_values.index(max(q_values))
+    return ACTIONS[max_idx], max_idx
+
+
+# 🔁 TRAINING LOOP
+def train(env, episodes=200):
+
+    alpha = 0.1   # learning rate
+    gamma = 0.9   # future reward
+    epsilon = 0.2 # exploration
+
+    for ep in range(episodes):
+        state = env.reset()
+        done = False
+
+        total_reward = 0
+
+        while not done:
+            key = state_to_key(state)
+
+            (dept, ser), action_idx = choose_action(state, epsilon)
+
+            action_dict = {
+                "department": dept,
+                "seriousness": ser
+            }
+
+            next_state, reward, done, info = env.step(action_dict)
+
+            total_reward += reward
+
+            # 🔁 Q-learning update
+            next_key = state_to_key(next_state) if next_state else None
+            max_future = max(Q[next_key]) if next_key else 0
+
+            Q[key][action_idx] += alpha * (
+                reward + gamma * max_future - Q[key][action_idx]
+            )
+
+            state = next_state
+
+        print(f"Episode {ep+1} | Reward: {total_reward:.2f} | Accuracy: {info['accuracy']:.2f}")
+
+
+# 🧪 TEST (after training)
+def test(env):
     state = env.reset()
     done = False
 
-    total_reward = 0
-    step_num = 1
-
     while not done:
-        # 🩺 INPUT STATE
-        print(f"\n🩺 Step {step_num}")
-        print("INPUT STATE:")
-        print(f"Symptoms: {state['symptoms']}")
-        print(f"Age: {state['age']}")
-        print(f"Heart Rate: {state['heart_rate']}")
-        print(f"Blood Pressure: {state['blood_pressure']}")
+        key = state_to_key(state)
+        q_values = Q[key]
+        best_idx = q_values.index(max(q_values))
 
-        # 🤖 AGENT ACTION
-        action = random_agent_action()
-        print("\nAGENT ACTION:")
-        print(f"Department: {action['department']}")
-        print(f"Seriousness: {action['seriousness']}")
+        dept, ser = ACTIONS[best_idx]
 
-        # 🚀 ENV STEP
-        next_state, reward, done, info = env.step(action)
+        action = {
+            "department": dept,
+            "seriousness": ser
+        }
 
-        # 🎯 OUTPUT
-        print(f"\nREWARD: {reward}")
-        print(f"TRUE DEPARTMENT: {info['true_department']}")
-        print(f"TRUE SERIOUSNESS: {info['true_seriousness']}")
-        print(f"RUNNING ACCURACY: {info['accuracy']:.2f}")
+        print("\n🩺 INPUT:", state)
+        print("🤖 ACTION:", action)
+
+        state, reward, done, info = env.step(action)
+
+        print("🎯 REWARD:", reward)
+        print("✅ TRUE:", info["true_department"], info["true_seriousness"])
         print("-" * 40)
-
-        total_reward += reward
-        state = next_state
-        step_num += 1
-
-    return total_reward, info["accuracy"]
 
 
 if __name__ == "__main__":
 
-    # 🔥 Choose difficulty
-    TASK = "easy"   # change to "medium" or "hard"
+    env = HospitalEnv(task="hard", max_steps=20)
 
-    # ✅ FIXED (no data=None)
-    env = HospitalEnv(task=TASK, max_steps=20)
+    print("🚀 Training started...\n")
+    train(env, episodes=200)
 
-    EPISODES = 1  # keep 1 for clean output
-
-    for ep in range(EPISODES):
-        total_reward, accuracy = run_episode(env)
-
-        print(f"\n📊 Episode {ep+1} Summary")
-        print(f"Total Reward: {total_reward}")
-        print(f"Final Accuracy: {accuracy:.2f}")
-        print("=" * 50)
+    print("\n🧪 Testing trained agent...\n")
+    test(env)
