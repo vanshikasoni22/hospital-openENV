@@ -31,16 +31,36 @@
 def compute_reward(patient, action):
     reward = 0.0
 
-    # ✅ correct priority
-    if action["seriousness"] == patient["true_seriousness"]:
-        reward += 0.5
+    true_ser = patient["true_seriousness"]
+    pred_ser = action["seriousness"]
 
-    # ✅ correct department
-    if action["department"] == patient["department"]:
-        reward += 0.3
+    true_dep = patient["department"]
+    pred_dep = action["department"]
 
-    # ❌ penalty for critical mistake
-    if patient["true_seriousness"] >= 4 and action["seriousness"] <= 2:
+    # 🎯 1. Seriousness reward (with gradient)
+    diff = abs(true_ser - pred_ser)
+
+    if diff == 0:
+        reward += 1.0
+    elif diff == 1:
+        reward += 0.6
+    elif diff == 2:
+        reward += 0.2
+    else:
+        reward -= 0.5   # far off
+
+    # 🏥 2. Department reward (stronger signal)
+    if pred_dep == true_dep:
+        reward += 1.0
+    else:
         reward -= 0.5
+
+    # 🚨 3. Critical mistake penalty (VERY IMPORTANT)
+    if true_ser >= 4 and pred_ser <= 2:
+        reward -= 1.0
+
+    # 🧠 4. Bonus for perfect prediction
+    if pred_ser == true_ser and pred_dep == true_dep:
+        reward += 0.5
 
     return reward
