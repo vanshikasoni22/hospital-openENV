@@ -87,10 +87,9 @@ def get_action(state):
         seriousness = 1
         
     return {
-        "priority": priority,
-        "department": department,
-        "seriousness": seriousness
-    }
+          "seriousness": seriousness,
+          "department": department
+      }
 
 def main():
     env = HospitalEnv(task="medium")
