@@ -71,9 +71,9 @@ STRICT RULES:
   - fever or mild symptoms
 
 Seriousness:
-1–2 → mild
+1-2 → mild
 3 → moderate
-4–5 → severe
+4-5 → severe
 
 Patient:
 Symptoms: {state['symptoms']}
@@ -98,14 +98,35 @@ Return ONLY JSON:
         text = (response.choices[0].message.content or "").strip()
         return safe_parse(text)
 
+        def fallback_policy(state):
+        symptoms = " ".join(state["symptoms"]).lower()
+
+        # 🚨 emergency cases
+        if "unconscious" in symptoms or "severe bleeding" in symptoms:
+            return {"department": "emergency", "seriousness": 5}
+
+        # ❤️ cardiology
+        if "chest pain" in symptoms or "palpitations" in symptoms:
+            return {"department": "cardiology", "seriousness": 4}
+
+        # 🫁 lungs
+        if "shortness of breath" in symptoms or "cough" in symptoms:
+            return {"department": "pulmonology", "seriousness": 3}
+
+        # 🧠 neuro
+        if "head injury" in symptoms or "dizziness" in symptoms:
+            return {"department": "neurology", "seriousness": 3}
+
+        # 🦴 bones
+        if "fracture" in symptoms:
+            return {"department": "orthopedics", "seriousness": 3}
+
+        # 🟢 default
+        return {"department": "general", "seriousness": 2}
+
     except Exception as e:
         print(f"[DEBUG] LLM error: {e}", flush=True)
-
-        return {
-            "department": "general",
-            "seriousness": 3
-        }
-
+        return fallback_policy(state)
 
 # ==============================
 # 🚀 MAIN LOOP
