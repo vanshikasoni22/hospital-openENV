@@ -32,7 +32,7 @@ def compute_reward(patient, action):
     reward = 0.0
 
     # ✅ correct priority
-    if action["priority"] == patient["true_priority"]:
+    if action["seriousness"] == patient["true_seriousness"]:
         reward += 0.5
 
     # ✅ correct department
@@ -40,7 +40,7 @@ def compute_reward(patient, action):
         reward += 0.3
 
     # ❌ penalty for critical mistake
-    if patient["true_priority"] >= 4 and action["priority"] <= 2:
+    if patient["true_seriousness"] >= 4 and action["seriousness"] <= 2:
         reward -= 0.5
 
     return reward
