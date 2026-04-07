@@ -1,3 +1,12 @@
+---
+title: Hospital Triage OpenEnv
+emoji: 🏥
+colorFrom: blue
+colorTo: green
+sdk: docker
+pinned: false
+---
+
 # Smart Hospital: RL Management Dashboard
 
 A Reinforcement Learning (RL) powered simulation dashboard designed to optimize hospital resource allocation and patient triage. This project transitions complex RL decision logic into a visual, interactive experience for monitoring agent performance and hospital resource impact.
