@@ -1,71 +1,117 @@
 import random
 
 
-SYMPTOMS_LIST = [
-    ("chest pain", "cardiology"),
-    ("head injury", "neurology"),
-    ("fracture", "orthopedics"),
-    ("shortness of breath", "pulmonology"),
-    ("fever", "general"),
-    ("unconscious", "emergency"),
-    ("severe bleeding", "emergency"),
+# ✅ Only keep symptom names (no fixed department mapping here)
+SYMPTOMS = [
+    "chest pain",
+    "head injury",
+    "fracture",
+    "shortness of breath",
+    "fever",
+    "unconscious",
+    "severe bleeding",
+    "palpitations",
+    "dizziness",
+    "cough"
 ]
 
 
+# =========================================================
+# 🧠 DEPARTMENT DECISION (CORE LOGIC)
+# =========================================================
+def get_department(symptoms):
+
+    # ensure list
+    if isinstance(symptoms, str):
+        symptoms = [symptoms]
+
+    symptoms = [s.lower() for s in symptoms]
+
+    # 🔥 STEP 1: ABSOLUTE PRIORITY (CRITICAL CASES)
+    if any(s in ["unconscious", "severe bleeding"] for s in symptoms):
+        return "emergency"
+
+    if "chest pain" in symptoms and "shortness of breath" in symptoms:
+        return "cardiology"
+
+    # 🧠 STEP 2: MULTI-SYMPTOM SCORING
+    dept_scores = {
+        "cardiology": 0,
+        "pulmonology": 0,
+        "neurology": 0,
+        "orthopedics": 0,
+        "emergency": 0,
+        "general": 0
+    }
+
+    for s in symptoms:
+
+        if "chest pain" in s:
+            dept_scores["cardiology"] += 3
+
+        if "palpitations" in s:
+            dept_scores["cardiology"] += 2
+
+        if "shortness of breath" in s or "cough" in s:
+            dept_scores["pulmonology"] += 3
+
+        if "head injury" in s or "dizziness" in s:
+            dept_scores["neurology"] += 3
+
+        if "fracture" in s:
+            dept_scores["orthopedics"] += 3
+
+        if "bleeding" in s or "trauma" in s:
+            dept_scores["emergency"] += 2
+
+        if "fever" in s:
+            dept_scores["general"] += 2
+
+    # small bias toward general
+    dept_scores["general"] += 1
+
+    return max(dept_scores, key=dept_scores.get)
+
+
+# =========================================================
+# 🧠 PATIENT GENERATION
+# =========================================================
 def generate_patient(task="easy"):
 
-    # 🔁 STEP 1: Select symptoms based on task
+    # 🔁 STEP 1: Select symptoms based on difficulty
     if task == "easy":
-        selected = [random.choice(SYMPTOMS_LIST)]
+        symptoms = [random.choice(SYMPTOMS)]
 
     elif task == "medium":
-        selected = random.sample(SYMPTOMS_LIST, 2)
+        symptoms = random.sample(SYMPTOMS, 2)
 
     elif task == "hard":
-        selected = random.sample(SYMPTOMS_LIST, random.randint(2, 4))
+        symptoms = random.sample(SYMPTOMS, random.randint(2, 4))
 
     else:
         raise ValueError("Invalid task level")
 
-    symptoms = [s[0] for s in selected]
-    departments = [s[1] for s in selected]
+    # 🔥 Optional: increase emergency cases (better training)
+    if random.random() < 0.2:
+        symptoms = ["unconscious"]
 
-    # 🧠 STEP 2: Decide TRUE DEPARTMENT (multi-symptom logic)
-
-    # 🔥 Priority rules (realistic combinations)
-    if "unconscious" in symptoms or "severe bleeding" in symptoms:
-        department = "emergency"
-
-    elif "chest pain" in symptoms and "shortness of breath" in symptoms:
-        department = "cardiology"
-
-    elif "head injury" in symptoms:
-        department = "neurology"
-
-    elif "fracture" in symptoms:
-        department = "orthopedics"
-
-    elif "shortness of breath" in symptoms:
-        department = "pulmonology"
-
-    elif "fever" in symptoms:
-        department = "general"
-
-    else:
-        # fallback
-        department = departments[0]
+    # 🧠 STEP 2: Assign department using unified logic
+    department = get_department(symptoms)
 
     # 🧍 STEP 3: Create patient
     patient = {
-        "symptoms": symptoms,  # ✅ NOW LIST
+        "symptoms": symptoms,  # ✅ always a list
         "age": random.randint(20, 80),
         "heart_rate": random.randint(60, 140),
         "blood_pressure": random.randint(80, 160),
         "department": department
     }
 
-    # 🧠 STEP 4: SERIOUSNESS SCORING
-    score = 1
+    # =========================================================
+    # 🧠 STEP 4: SERIOUSNESS SCORING (MATCH INFERENCE)
+    # =========================================================
+
+    score = 1  # base
 
     # 🔴 Vital-based scoring
     if patient["heart_rate"] > 120:
@@ -78,7 +124,7 @@ def generate_patient(task="easy"):
     elif patient["blood_pressure"] < 100:
         score += 1
 
-    # 🧠 Symptom-based scoring (loop for multi symptoms)
+    # 🧠 Symptom-based scoring (multi-symptom aware)
     for symptom in symptoms:
         if symptom in ["unconscious", "severe bleeding"]:
             score += 3
