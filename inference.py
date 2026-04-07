@@ -1,19 +1,45 @@
 from env.hospital_env import HospitalEnv
 
-MAX_STEPS = 20
+MAX_STEPS = 10
 
 
 def get_action(state):
-    symptoms_data = state.get("symptoms", "")
-    if isinstance(symptoms_data, list):
-        symptoms = " ".join(symptoms_data).lower()
+    symptoms = state["symptoms"]
+    
+    # ✅ handle both string and list (important for medium/hard)
+    if isinstance(symptoms, list):
+        symptoms_list = [s.lower() for s in symptoms]
+        symptoms_text = " ".join(symptoms_list)
     else:
-        symptoms = symptoms_data.lower()
+        symptoms_text = symptoms.lower()
+        symptoms_list = [symptoms_text]
+
     age = state["age"]
     hr = state["heart_rate"]
     bp = state["blood_pressure"]
 
-    #  Department Scoring
+    # =========================================================
+    # 🔥 STEP 1: ABSOLUTE PRIORITY (MATCH GENERATOR)
+    # =========================================================
+
+    # 🚨 Emergency override (CRITICAL FIX)
+    if "unconscious" in symptoms_text or "severe bleeding" in symptoms_text:
+        return {
+            "department": "emergency",
+            "seriousness": 5
+        }
+
+    # ❤️ Critical cardiology combo
+    if "chest pain" in symptoms_text and "shortness of breath" in symptoms_text:
+        return {
+            "department": "cardiology",
+            "seriousness": 5
+        }
+
+    # =========================================================
+    # 🧠 STEP 2: DEPARTMENT SCORING (SECONDARY)
+    # =========================================================
+
     dept_scores = {
         "cardiology": 0,
         "pulmonology": 0,
@@ -23,76 +49,80 @@ def get_action(state):
         "general": 0
     }
 
-    # weighted keywords
-    if "chest pain" in symptoms:
-        dept_scores["cardiology"] += 3
-    if "palpitations" in symptoms:
-        dept_scores["cardiology"] += 2
+    for symptom in symptoms_list:
 
-    if "breath" in symptoms or "cough" in symptoms:
-        dept_scores["pulmonology"] += 2
+        if "chest pain" in symptom:
+            dept_scores["cardiology"] += 3
 
-    if "headache" in symptoms or "dizziness" in symptoms:
-        dept_scores["neurology"] += 2
+        if "palpitations" in symptom:
+            dept_scores["cardiology"] += 2
 
-    if "fracture" in symptoms or "injury" in symptoms:
-        dept_scores["orthopedics"] += 3
+        if "shortness of breath" in symptom or "cough" in symptom:
+            dept_scores["pulmonology"] += 3
 
-    if "bleeding" in symptoms or "trauma" in symptoms:
-        dept_scores["emergency"] += 4
+        if "head injury" in symptom or "dizziness" in symptom:
+            dept_scores["neurology"] += 3
+
+        if "fracture" in symptom:
+            dept_scores["orthopedics"] += 3
+
+        # ⚠️ keep but lower importance (since override handled above)
+        if "bleeding" in symptom or "trauma" in symptom:
+            dept_scores["emergency"] += 2
+
+        if "fever" in symptom:
+            dept_scores["general"] += 2
 
     # fallback
     dept_scores["general"] += 1
 
-    # pick best department
     department = max(dept_scores, key=dept_scores.get)
 
-    # Priority Scoring
-    priority_score = 0
+    # =========================================================
+    # 🧠 STEP 3: SERIOUSNESS (ALIGNED WITH GENERATOR)
+    # =========================================================
 
-    # vitals (HIGH IMPACT)
-    if hr > 130 or hr < 45:
-        priority_score += 4
+    score = 1  # base
 
-    if bp > 180 or bp < 80:
-        priority_score += 4
+    # 🔴 vitals
+    if hr > 120:
+        score += 2
+    elif hr > 100:
+        score += 1
 
-    # symptoms severity
-    if any(x in symptoms for x in ["unconscious", "severe", "chest pain"]):
-        priority_score += 5
-    elif any(x in symptoms for x in ["moderate", "pain", "fever"]):
-        priority_score += 1
+    if bp < 90:
+        score += 2
+    elif bp < 100:
+        score += 1
 
-    # age risk
-    if age > 70:
-        priority_score += 1
+    # 🧠 symptoms severity
+    if any(x in symptoms_text for x in ["unconscious", "severe bleeding"]):
+        score += 3
+    elif any(x in symptoms_text for x in ["chest pain", "shortness of breath"]):
+        score += 2
+    elif any(x in symptoms_text for x in ["head injury"]):
+        score += 2
+    elif any(x in symptoms_text for x in ["fracture"]):
+        score += 1
 
-    #  Convert score → priority
-    if priority_score >= 4:
-        priority = 3
-    elif priority_score >= 2:
-        priority = 2
-    else:
-        priority = 1
+    # 👶 age risk
+    if age > 65:
+        score += 1
 
-    if priority_score >= 6:
-        seriousness = 5
-    elif priority_score >= 4:
-        seriousness = 4
-    elif priority_score >= 3:
-        seriousness = 3
-    elif priority_score >= 1:
-        seriousness = 2
-    else:
-        seriousness = 1
-        
+    seriousness = min(5, score)
+
+    # =========================================================
+    # ✅ FINAL OUTPUT
+    # =========================================================
+
     return {
-          "seriousness": seriousness,
-          "department": department
-      }
+        "seriousness": seriousness,
+        "department": department
+    }
+
 
 def main():
-    env = HospitalEnv(task="medium")
+    env = HospitalEnv(task="medium")  # change to "hard" later
     state = env.reset()
 
     total_reward = 0
