@@ -72,7 +72,7 @@ def get_action(state):
         priority = 1
 
     return {
-        "priority": priority,
+        "seriousness": priority,
         "department": department
     }
 
