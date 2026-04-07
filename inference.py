@@ -1,3 +1,4 @@
+print("DEBUG: inference started", flush=True)
 import os
 import json
 from openai import OpenAI
@@ -8,7 +9,7 @@ import time
 # keep container alive for HF
 while True:
     time.sleep(60)
-print("DEBUG: inference started", flush=True)
+
 # ==============================
 # 🔑 Setup client
 # ==============================
