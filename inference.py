@@ -1,5 +1,6 @@
 import os
 import json
+import time
 from openai import OpenAI
 from env.hospital_env import HospitalEnv
 
@@ -180,6 +181,5 @@ if __name__ == "__main__":
     run()
 
     # keep container alive for HF
-    import time
     while True:
         time.sleep(60)
