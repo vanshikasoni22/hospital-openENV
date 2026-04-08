@@ -154,15 +154,21 @@ def test(env):
         print(f"\n🩺 Step {step_num}")
         print("INPUT STATE:")
         print(f"Symptoms: {state['symptoms']}")
-        print(f"Age: {state['age']}")
-        print(f"Heart Rate: {state['heart_rate']}")
-        print(f"Blood Pressure: {state['blood_pressure']}")
+        print(f"Age: {state['age']:.2f}")
+        print(f"Heart Rate: {state['heart_rate']:.2f}")
+        print(f"Blood Pressure: {state['blood_pressure']:.2f}")
 
         print("\nAGENT ACTION:")
         print(f"Department: {action['department']}")
         print(f"Seriousness: {action['seriousness']}")
 
+        # ✅ TAKE STEP FIRST
         state, reward, done, info = env.step(action)
+
+        # ✅ NOW PRINT QUEUE (correct position)
+        print("\n🏥 QUEUE STATUS:")
+        for dept_name, q_info in info["queue_status"].items():
+            print(f"{dept_name}: {q_info['total']} | Severity: {q_info['seriousness_levels']}")
 
         dept_correct = action["department"] == info["true_department"]
         ser_correct = action["seriousness"] == info["true_seriousness"]
@@ -176,7 +182,6 @@ def test(env):
 
         step_score = (dept_correct + ser_correct) / 2
         total_score += step_score
-        
 
         print(f"\nREWARD: {reward}")
         print(f"TRUE DEPARTMENT: {info['true_department']}")
@@ -188,6 +193,12 @@ def test(env):
         print("-" * 40)
 
         step_num += 1
+
+    # ✅ FINAL SUMMARY
+    print("\n📊 FINAL RESULTS:")
+    print(f"Department Accuracy: {correct_department/total:.2f}")
+    print(f"Seriousness Accuracy: {correct_seriousness/total:.2f}")
+    print(f"Overall Accuracy: {total_score/total:.2f}")
 
 
 # MAIN
