@@ -24,12 +24,17 @@ Q = defaultdict(lambda: [0] * len(ACTIONS))
 def state_to_key(state):
     symptoms = tuple(sorted(state["symptoms"]))
 
-    high_hr = state["heart_rate"] > 0.6
-    low_bp = state["blood_pressure"] < 0.5
-    elderly = state["age"] > 0.6
+    # 🎯 bucket instead of boolean
+    hr_bucket = int(state["heart_rate"] * 10)   # 0–10
+    bp_bucket = int(state["blood_pressure"] * 10)
+    age_bucket = int(state["age"] * 10)
 
-    return (symptoms, high_hr, low_bp, elderly)
-
+    return (
+        symptoms,
+        hr_bucket,
+        bp_bucket,
+        age_bucket
+    )
 # ==============================
 # 🎯 ACTION SELECTION
 # ==============================
