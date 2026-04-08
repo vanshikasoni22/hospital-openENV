@@ -182,7 +182,7 @@ def test(env):
         print(f"TRUE SERIOUSNESS: {info['true_seriousness']}")
         print(f"Dept Correct: {dept_correct}")
         print(f"Seriousness Correct: {ser_correct}")
-        print(f"RUNNING ACCURACY: {total_score/total:.2f}")
+        print(f"\n✅ FINAL ACCURACY: {total_score/total:.2f}")
         print("-" * 40)
 
         step_num += 1
@@ -191,7 +191,7 @@ def test(env):
 # 🚀 MAIN
 if __name__ == "__main__":
 
-    env = HospitalEnv(task="hard", max_steps=20)
+    env = HospitalEnv(task="hard", max_steps=10)
 
     print("🚀 Training started...\n")
     train(env, episodes=5000)
