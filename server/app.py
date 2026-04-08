@@ -3,14 +3,13 @@ from fastapi.responses import HTMLResponse
 from env.hospital_env import HospitalEnv
 import uvicorn
 import random
-from inference import ask_llm  # reuse your LLM logic
+from inference import ask_llm 
 
 app = FastAPI()
 
 
-# ==============================
-# 🏠 HOME UI
-# ==============================
+# HOME UI
+
 @app.get("/", response_class=HTMLResponse)
 def home():
     return """
@@ -37,9 +36,7 @@ def home():
     """
 
 
-# ==============================
-# 🔁 RESET (validator)
-# ==============================
+# RESET (validator)
 @app.post("/reset")
 def reset():
     env = HospitalEnv(task="easy", max_steps=1)
@@ -47,10 +44,7 @@ def reset():
     return {"state": state}
 
 
-# ==============================
-# 🎮 DEMO SIMULATION
-# ==============================
-
+# DEMO SIMULATION
 @app.get("/demo")
 def demo():
     env = HospitalEnv(task="hard", max_steps=5)
@@ -77,9 +71,7 @@ def demo():
     return {"simulation": steps}
 
 
-# ==============================
-# 🚀 ENTRYPOINT (required)
-# ==============================
+# ENTRYPOINT (required)
 def main():
     return app
 
