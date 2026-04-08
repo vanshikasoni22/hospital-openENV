@@ -194,7 +194,7 @@ if __name__ == "__main__":
     env = HospitalEnv(task="hard", max_steps=20)
 
     print("🚀 Training started...\n")
-    train(env, episodes=50)
+    train(env, episodes=5000)
 
     print("\n🧪 Testing trained agent...\n")
     test(env)
