@@ -7,13 +7,19 @@ import sys
 import os
 from PIL import Image
 
-# Add parent directory to path to import env
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Adding parent directory to path to import env
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+from scripts.streamlit_agent import get_action
 from env.hospital_env import HospitalEnv
 from scripts.run_baseline import rl_agent, load_q_table
 
-load_q_table()
+if "q_table_loaded" not in st.session_state:
+    try:
+        load_q_table()
+        st.session_state.q_table_loaded = True
+    except Exception as e:
+        st.warning(f"Q-table not loaded: {e}")
 
 # Page Config
 st.set_page_config(
@@ -144,6 +150,12 @@ if 'env' not in st.session_state:
     st.session_state.queue = []
     st.session_state.latest_reward = 0
 
+# Agent selection
+mode = st.selectbox(
+    "Select Agent",
+    ["LLM Agent", "RL Agent"]
+)
+
 # SIDEBAR & LOGO
 with st.sidebar:
     # Use the transparent logo
@@ -205,38 +217,64 @@ with left_col:
         st.progress(st.session_state.staff_active / st.session_state.staff_total)
 
     st.markdown("### ⏳ Patient Queue")
-    for p in st.session_state.queue:
-        st.markdown(f"""
-        <div class="patient-item">
-            <span style="color: #94a3b8; font-size: 0.8rem;">URGENCY UNKNOWN</span><br>
-            👤 <b>Patient (Age {p['age']})</b><br>
-            <span style="font-size: 0.9rem;">{p['symptoms']}</span>
-        </div>
-        """, unsafe_allow_html=True)
+    if hasattr(st.session_state.env, "patients"):
+        for p in st.session_state.env.patients:
+            st.markdown(f"""
+            <div class="patient-item">
+                👤 <b>Patient (Age {p.age})</b><br>
+                <span style="font-size: 0.9rem;">{p.symptoms}</span>
+            </div>
+            """, unsafe_allow_html=True)
+    if hasattr(st.session_state.env, "capacity"):
+        st.markdown("### 🏥 Department Capacity")
+        for dept, cap in st.session_state.env.capacity.items():
+            st.write(f"{dept.capitalize()}: {cap}")
 
 with right_col:
     st.subheader("🦾 Agent Workbench")
     
     if st.button("Simulate Next Patient ⏩", type="primary", use_container_width=True):
-        # Simulation Logic
-        state = st.session_state.env.reset()
-        action = rl_agent(state)
+
+        # 🔥 Initialize state only once
+        if "current_state" not in st.session_state:
+            st.session_state.current_state = st.session_state.env.reset()
+
+        state = st.session_state.current_state
+
+        # 🔥 Safe agent execution
+        try:
+            if mode == "LLM Agent":
+                action = get_action(state)
+            else:
+                action = rl_agent(state)
+        except Exception as e:
+            st.error(f"Agent failed: {e}")
+            action = {"department": "general", "seriousness": 3}
+
+        # Step environment
         next_state, reward, done, info = st.session_state.env.step(action)
-        
-        # Update State
+
+        # Store next state
+        st.session_state.current_state = next_state
+
+        # Metrics update
         st.session_state.total_reward += reward
         st.session_state.patients_processed += 1
         st.session_state.latest_reward = reward
-        
-        # Update History
+
+        # History update
         st.session_state.history.insert(0, {
             "ID": f"#{st.session_state.patients_processed}",
-            "Symptoms": state['symptoms'],
-            "Agent Priority": action['seriousness'],
-            "Agent Dept": action['department'].capitalize(),
+            "Symptoms": state.get('symptoms', []),
+            "Agent Priority": action.get('seriousness', 0),
+            "Agent Dept": action.get('department', 'general').capitalize(),
             "Outcome": "Matched" if reward > 0.5 else "Suboptimal",
             "Reward": f"{reward:+.2f}"
         })
+
+        # Reset if done
+        if done:
+            st.session_state.current_state = st.session_state.env.reset()
 
     # Decision Display
     if st.session_state.patients_processed > 0:

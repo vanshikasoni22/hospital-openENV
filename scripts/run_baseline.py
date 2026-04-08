@@ -3,9 +3,7 @@ import random
 from collections import defaultdict
 import pickle
 
-# ==============================
-# 🎯 ACTION SPACE
-# ==============================
+# ACTION SPACE
 DEPARTMENTS = [
     "cardiology",
     "neurology",
@@ -19,14 +17,10 @@ SERIOUSNESS = [1, 2, 3, 4, 5]
 
 ACTIONS = [(d, s) for d in DEPARTMENTS for s in SERIOUSNESS]
 
-# ==============================
-# 🧠 Q-TABLE
-# ==============================
+# Q-TABLE
 Q = defaultdict(lambda: [0] * len(ACTIONS))
 
-# ==============================
-# 🔑 STATE ENCODING
-# ==============================
+# STATE ENCODING
 def state_to_key(state):
     symptoms = tuple(sorted(state["symptoms"]))
 
@@ -50,10 +44,10 @@ def choose_action(state, epsilon):
 
     return ACTIONS[action_idx], action_idx
 
-# ==============================
-# 🔁 TRAINING LOOP
-# ==============================
+# TRAINING LOOP
 def train(env, episodes=500):
+    # save_q_table()
+
     alpha = 0.2
     gamma = 0.95
 
@@ -67,6 +61,7 @@ def train(env, episodes=500):
 
         total_reward = 0
 
+        # ✅ accuracy tracking
         correct_department = 0
         correct_seriousness = 0
         correct_queue = 0
@@ -103,7 +98,7 @@ def train(env, episodes=500):
             step_score = (dept_correct + ser_correct + queue_correct) / 3
             total_score += step_score
 
-            # 🧠 Q-learning update
+            # Q-learning update
             next_key = state_to_key(next_state) if next_state else None
             max_future = max(Q[next_key]) if next_key else 0
 
@@ -124,9 +119,7 @@ def train(env, episodes=500):
             f"Epsilon: {epsilon:.2f}"
         )
 
-# ==============================
-# 🧪 TEST FUNCTION
-# ==============================
+# TEST FUNCTION
 def test(env):
     state = env.reset()
     done = False
@@ -161,10 +154,10 @@ def test(env):
         print(f"Department: {action['department']}")
         print(f"Seriousness: {action['seriousness']}")
 
-        # 👉 take step
+        # take step
         state, reward, done, info = env.step(action)
 
-        # 👉 show ONLY selected department queue
+        #  show ONLY selected department queue
         selected_dept = action["department"]
         q_info = info["queue_status"].get(selected_dept, {
             "total": 0,
@@ -202,18 +195,14 @@ def test(env):
 
         step_num += 1
 
-    # ==============================
-    # 📊 FINAL RESULTS
-    # ==============================
+    # FINAL RESULTS
     print("\n📊 FINAL RESULTS:")
     print(f"Department Accuracy: {correct_department/total:.2f}")
     print(f"Seriousness Accuracy: {correct_seriousness/total:.2f}")
     print(f"Queue Accuracy: {correct_queue/total:.2f}")
     print(f"Overall Accuracy: {total_score/total:.2f}")
 
-# ==============================
-# 🚀 MAIN
-# ==============================
+# MAIN
 if __name__ == "__main__":
     env = HospitalEnv(task="hard", max_steps=10)
 
@@ -223,29 +212,43 @@ if __name__ == "__main__":
     print("\n🧪 Testing trained agent...\n")
     test(env)
 
-# ==============================
-# 🤖 RL AGENT (FOR UI / API)
-# ==============================
+# RL AGENT (for inference/UI)
+
 def rl_agent(state):
     key = state_to_key(state)
 
+    # fallback if unseen state
     if key not in Q:
-        from inference import get_action
-        return get_action(state)
+        symptoms = " ".join(state.get("symptoms", [])).lower()
+
+        if "unconscious" in symptoms or "severe bleeding" in symptoms:
+            return {"department": "emergency", "seriousness": 5}
+
+    if "chest pain" in symptoms:
+        return {"department": "cardiology", "seriousness": 4}
+
+    if "shortness of breath" in symptoms:
+        return {"department": "pulmonology", "seriousness": 3}
+
+    if "head injury" in symptoms or "dizziness" in symptoms:
+        return {"department": "neurology", "seriousness": 3}
+
+    if "fracture" in symptoms:
+        return {"department": "orthopedics", "seriousness": 3}
+
+    return {"department": "general", "seriousness": 2}
 
     q_values = Q[key]
     best_idx = q_values.index(max(q_values))
 
-    dept, ser = ACTIONS[best_idx]
+    dept, ser = ACTIONS[best_idx]   
 
     return {
         "department": dept,
         "seriousness": ser
     }
 
-# ==============================
-# 💾 SAVE / LOAD Q TABLE
-# ==============================
+# SAVE / LOAD Q TABLE
 def save_q_table(filename="q_table.pkl"):
     with open(filename, "wb") as f:
         pickle.dump(dict(Q), f)
