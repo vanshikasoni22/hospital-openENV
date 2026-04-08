@@ -91,8 +91,8 @@ def train(env, episodes=500):
             total_reward += reward
 
             # 🔥 stronger learning from mistakes
-            if reward < 0:
-                reward *= 2
+            # if reward < 0:
+            #     reward *= 2
 
             # ✅ correct evaluation (NOT using env accuracy)
             dept_correct = action_dict["department"] == info["true_department"]

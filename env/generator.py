@@ -90,6 +90,8 @@ def generate_patient(task="easy"):
     # 🔥 FIXED: reduce emergency bias
     if random.random() < 0.1:
         symptoms = ["unconscious"]
+    if random.random() < 0.3:
+        symptoms = ["unconscious"]
 
     # 🧠 STEP 2: Department
     department = get_department(symptoms)
