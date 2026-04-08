@@ -12,7 +12,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from scripts.streamlit_agent import get_action
 from env.hospital_env import HospitalEnv
-from scripts.run_baseline import rl_agent, load_q_table
+# from scripts.run_baseline import rl_agent, load_q_table
 
 if "q_table_loaded" not in st.session_state:
     try:
