@@ -243,6 +243,3 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"[FATAL] {e}", flush=True)
         print("[END] success=false steps=0 score=0.000 rewards=", flush=True)
-
-    while True:
-        time.sleep(60)
