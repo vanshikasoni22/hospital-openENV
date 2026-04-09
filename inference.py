@@ -170,6 +170,7 @@ def run_inference():
         success = done and score > 0
 
         log_end(success, len(rewards), score, rewards)
+        time.sleep(0.5)
 
 # ==============================
 # ▶️ ENTRY
@@ -180,3 +181,4 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"[ERROR] {e}", file=sys.stderr)
         sys.exit(1)
+
